@@ -1,0 +1,99 @@
+# =====================================================================
+# Cấu hình mặc định cho pipeline phát hiện khói / lửa (xử lý ảnh truyền thống)
+# Mọi ngưỡng đều là giá trị khởi điểm -> CẦN TINH CHỈNH trên dữ liệu thật.
+# =====================================================================
+
+# Bật / tắt từng tầng của pipeline (dùng cho ablation study)
+pipeline:
+  detect_fire: true
+  detect_smoke: true
+  use_motion: true        # AND mask màu với mask chuyển động
+  use_temporal: true      # Chấm điểm bằng đặc trưng thời gian / hình dạng
+  use_persistence: true   # Vùng phải tồn tại đủ lâu mới báo
+
+preprocessing:
+  resize_width: 640       # Chuẩn hóa kích thước -> ngưỡng diện tích ổn định
+  blur_ksize: 5           # Kernel Gaussian (số lẻ, 0 = tắt)
+
+fire_color:
+  method: combined        # rgb | ycbcr | combined (AND) | any (OR)
+  rgb:                    # Chen et al., 2004
+    r_threshold: 125      # R_T
+    s_threshold: 60       # S_T (thang 0..255 của OpenCV)
+  ycbcr:                  # Celik & Demirel, 2009
+    tau: 40               # |Cb - Cr| >= tau
+
+smoke_color:
+  max_channel_diff: 25    # max(|R-G|, |G-B|, |R-B|) -> gần xám
+  s_max: 60               # Bão hòa thấp (HSV, 0..255)
+  v_min: 80               # Độ sáng tối thiểu
+  v_max: 230              # Độ sáng tối đa
+
+motion:
+  method: mog2            # mog2 | knn | frame_diff
+  history: 300
+  var_threshold: 25       # MOG2
+  dist2_threshold: 400    # KNN
+  detect_shadows: false
+  learning_rate: -1       # -1 = tự động
+  diff_threshold: 20      # frame_diff
+  bg_alpha: 0.02          # Tốc độ cập nhật ảnh nền xám (dùng cho đặc trưng khói)
+
+optical_flow:
+  enabled: true
+  pyr_scale: 0.5
+  levels: 3
+  winsize: 15
+  iterations: 3
+  poly_n: 5
+  poly_sigma: 1.2
+
+morphology:
+  fire:
+    open_ksize: 3
+    close_ksize: 7
+  smoke:
+    open_ksize: 5
+    close_ksize: 11
+
+candidates:
+  min_area: 150           # pixel (trên ảnh đã resize)
+  max_area_ratio: 0.6     # Tỉ lệ tối đa so với diện tích khung hình
+  min_aspect: 0.1         # w / h
+  max_aspect: 6.0
+
+tracking:
+  iou_threshold: 0.1      # Lửa dao động mạnh -> IoU thấp
+  max_missed: 5           # Số frame mất dấu tối đa trước khi xóa track
+  buffer_size: 30         # Số frame lịch sử giữ cho mỗi track
+
+temporal:
+  flicker_window: 25      # Cửa sổ đếm đổi trạng thái pixel
+  flicker_min_freq: 3.0   # Hz, ngưỡng "tần số cao" cho FFT
+  min_history: 8          # Cần ít nhất N frame lịch sử mới chấm điểm
+
+persistence:
+  window: 15
+  min_hits: 8             # Xuất hiện >= min_hits trong window frame gần nhất
+
+# Chấm điểm: ten_dac_trung: [trong_so, lo, hi]
+# Điểm thành phần = clip((x - lo) / (hi - lo), 0, 1)  (lo > hi => đảo chiều)
+scoring:
+  fire:
+    threshold: 0.45
+    features:
+      pixel_flicker:      [0.30, 0.03, 0.25]
+      intensity_flicker:  [0.15, 0.30, 0.70]
+      area_variation:     [0.20, 0.02, 0.15]
+      shape_change:       [0.20, 0.02, 0.15]
+      boundary_roughness: [0.15, 1.02, 1.25]
+  smoke:
+    threshold: 0.45
+    features:
+      edge_blur:          [0.30, 1.00, 0.50]   # Nhỏ hơn 1 = mờ hơn nền
+      upward_motion:      [0.30, 0.05, 0.80]   # px/frame hướng lên
+      area_growth:        [0.15, 0.00, 0.03]
+      texture_smoothness: [0.25, 0.20, 0.60]
+
+visualization:
+  tile_width: 320

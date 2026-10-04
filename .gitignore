@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Dữ liệu & kết quả (lớn, không commit)
+data/raw/*
+!data/raw/.gitkeep
+data/samples/*.mp4
+outputs/
+
+# IDE / OS
+.idea/
+.DS_Store
+Thumbs.db

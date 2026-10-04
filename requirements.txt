@@ -1,0 +1,31 @@
+# ---- Lõi xử lý ảnh ----
+opencv-python>=4.9
+numpy>=1.26
+scipy>=1.11
+PyWavelets>=1.5
+scikit-image>=0.22
+
+# ---- Cấu hình, tiện ích ----
+PyYAML>=6.0
+tqdm>=4.66
+
+# ---- Phân tích, trực quan hóa ----
+matplotlib>=3.8
+pandas>=2.1
+
+# ---- Demo ----
+streamlit>=1.30
+
+# ---- Kiểm thử ----
+pytest>=8.0
+
+# ---- Notebook (thử nghiệm, minh họa báo cáo) ----
+jupyter>=1.0
+ipykernel>=6.29
+
+# ---- Mở rộng học sâu (giai đoạn sau, bỏ comment khi cần) ----
+# scikit-learn>=1.4
+# torch>=2.2
+# torchvision>=0.17
+# ultralytics>=8.1
+# onnxruntime>=1.17
