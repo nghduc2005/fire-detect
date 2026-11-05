@@ -12,10 +12,11 @@
 2. [Cơ sở lý thuyết & Kỹ thuật cốt lõi](#2-cơ-sở-lý-thuyết--kỹ-thuật-cốt-lõi)
 3. [Cấu trúc thư mục dự án](#3-cấu-trúc-thư-mục-dự-án)
 4. [Môi trường & Hướng dẫn cài đặt](#4-môi-trường--hướng-dẫn-cài-đặt)
-5. [Quy trình phát triển & Lộ trình thực hiện](#5-quy-trình-phát-triển--lộ-trình-thực-hiện)
-6. [Hệ thống đánh giá & Chỉ số](#6-hệ-thống-đánh-giá--chỉ-số)
-7. [Phân công công việc nhóm](#7-phân-công-công-việc-nhóm-4-thành-viên)
-8. [Tài liệu tham khảo](#8-tài-liệu-tham-khảo)
+5. [Hướng dẫn khởi chạy & Thực nghiệm](#5-hướng-dẫn-khởi-chạy--thực-nghiệm)
+6. [Quy trình phát triển & Lộ trình thực hiện](#6-quy-trình-phát-triển--lộ-trình-thực-hiện)
+7. [Hệ thống đánh giá & Chỉ số](#7-hệ-thống-đánh-giá--chỉ-số)
+8. [Phân công công việc nhóm](#8-phân-công-công-việc-nhóm-4-thành-viên)
+9. [Tài liệu tham khảo](#9-tài-liệu-tham-khảo)
 
 ---
 
@@ -170,7 +171,108 @@ Các thư viện chính được sử dụng:
 
 ---
 
-## 5. Quy trình phát triển & Lộ trình thực hiện
+## 5. Hướng dẫn khởi chạy & Thực nghiệm
+
+### 5.1. Chạy bộ kiểm thử tự động (pytest)
+Kiểm tra tính toàn vẹn của toàn bộ các tầng thuật toán trước khi vận hành:
+
+```powershell
+# Chạy toàn bộ 43 test cases:
+python -m pytest -v
+
+# Hoặc chạy kiểm thử riêng từng module:
+python -m pytest tests/test_color.py -v
+python -m pytest tests/test_classical_pipeline.py -v
+```
+
+---
+
+### 5.2. Khởi chạy giao diện Web Demo tương tác (Streamlit)
+Giao diện trực quan phục vụ demo, thuyết trình và tinh chỉnh ngưỡng thời gian thực bằng thanh trượt (slider):
+
+```powershell
+# Khuyến nghị chạy qua module Python:
+python -m streamlit run app/streamlit_app.py
+
+# Hoặc chỉ định trực tiếp qua Python của môi trường ảo:
+.\.venv\Scripts\python.exe -m streamlit run app/streamlit_app.py
+```
+
+Sau khi chạy lệnh, trình duyệt web sẽ tự động mở trang: `http://localhost:8501`.
+
+**Các tính năng chính trên giao diện Web:**
+1. **Chọn nguồn video:** Tải lên video mới (`.mp4`, `.avi`, `.mov`) tại sidebar hoặc chọn các mẫu video có sẵn.
+2. **Chế độ Debug đa màn hình:** Tích chọn *"Chế độ Debug (xem các mask trung gian)"* để quan sát song song 5 khung hình: Mặt nạ màu lửa, Mặt nạ màu khói, Mặt nạ chuyển động, Mặt nạ lửa sau morphology, Mặt nạ khói sau morphology.
+3. **Thử nghiệm bóc tách (Ablation Study):** Bật/tắt nhanh các hộp kiểm tầng Chuyển động, Đặc trưng thời gian, Bỏ phiếu persistence để đánh giá vai trò của từng tầng xử lý.
+4. **Tinh chỉnh tham số trực tiếp:** Kéo thanh trượt để điều chỉnh tức thì các ngưỡng màu ($R_T, S_T, \tau$), bán kính làm mịn Gaussian, diện tích tối thiểu `min_area`.
+
+---
+
+### 5.3. Khởi chạy qua giao diện dòng lệnh (CLI Script)
+Script [`scripts/run_video.py`](file:///d:/PTIT/XLA/fire_detect/scripts/run_video.py) dùng để xử lý video hàng loạt, kiểm thử webcam trực tiếp hoặc xuất file video đã vẽ bounding box:
+
+```powershell
+# 1. Chạy trên video và mở cửa sổ hiển thị trực tiếp:
+python scripts/run_video.py --input "duong_dan_den_video.mp4" --show
+
+# 2. Chạy ở chế độ Debug (hiển thị lưới mask trung gian bên cạnh video chính):
+python scripts/run_video.py --input "duong_dan_den_video.mp4" --debug --show
+
+# 3. Chạy và lưu video kết quả có bounding box ra file:
+python scripts/run_video.py --input "duong_dan_den_video.mp4" --output "outputs/result.mp4" --show
+
+# 4. Chạy trực tiếp từ Webcam (realtime camera giám sát):
+python scripts/run_video.py --input 0 --show
+
+# 5. Giới hạn số khung hình để kiểm tra nhanh hiệu năng:
+python scripts/run_video.py --input "duong_dan_den_video.mp4" --max-frames 100
+```
+
+> [!NOTE]
+> **Phím điều khiển trên cửa sổ OpenCV (`--show`):**
+> - Phím **`q`** hoặc **`ESC`**: Thoát chương trình.
+> - **Phím cách (Spacebar)**: Tạm dừng / Tiếp tục phát video.
+
+---
+
+### 5.4. Khởi chạy công cụ phân tích phân bố màu sắc (TV2)
+Sử dụng [`scripts/analyze_color.py`](file:///d:/PTIT/XLA/fire_detect/scripts/analyze_color.py) để trích xuất và vẽ biểu đồ 5 không gian màu (RGB, HSV, YCrCb, phân bố tương quan 2D Cb-Cr, H-S) phục vụ biện minh ngưỡng:
+
+```powershell
+# Phân tích toàn bộ khung hình:
+python scripts/analyze_color.py --input "data/samples/sample_fire.mp4" --output "outputs/color_distribution.png"
+
+# Phân tích tập trung vào các pixel thuộc vùng nhãn Ground Truth:
+python scripts/analyze_color.py --input "data/samples/sample_fire.mp4" --annotation "data/annotations/sample_fire.json" --label fire --output "outputs/fire_distribution.png"
+```
+
+---
+
+### 5.5. Xử lý các sự cố thường gặp (Troubleshooting)
+
+#### 1. Lỗi PowerShell chặn thực thi script (`Activate.ps1 cannot be loaded`)
+- **Nguyên nhân:** Chính sách bảo mật mặc định `Restricted` của Windows PowerShell.
+- **Khắc phục:** Mở PowerShell và chạy lệnh sau để cho phép chạy script trong phiên làm việc hiện tại:
+  ```powershell
+  Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+  .\.venv\Scripts\Activate.ps1
+  ```
+
+#### 2. Lỗi `Fatal error in launcher: Unable to create process using...`
+- **Nguyên nhân:** Xảy ra khi thư mục dự án hoặc môi trường ảo `.venv` bị di chuyển, sao chép hoặc đổi tên, khiến đường dẫn Python hardcode bên trong các file `.exe` (như `streamlit.exe`, `pytest.exe`) không còn trỏ đúng file thực thi.
+- **Khắc phục nhanh:** Sử dụng cú pháp module `python -m <tên_gói>` thay vì gọi trực tiếp file `.exe`:
+  ```powershell
+  python -m streamlit run app/streamlit_app.py
+  python -m pytest -v
+  ```
+- **Khắc phục triệt để:** Cài đè lại launcher bằng pip:
+  ```powershell
+  python -m pip install --force-reinstall --no-deps streamlit
+  ```
+
+---
+
+## 6. Quy trình phát triển & Lộ trình thực hiện
 
 Chi tiết từng bước thuật toán, biểu thức toán học và danh sách tham số tham khảo chi tiết tại [`ke_hoach_trien_khai.md`](file:///d:/PTIT/XLA/fire_detect/ke_hoach_trien_khai.md).
 
@@ -197,23 +299,23 @@ Chi tiết từng bước thuật toán, biểu thức toán học và danh sác
 
 ---
 
-## 6. Hệ thống đánh giá & Chỉ số
+## 7. Hệ thống đánh giá & Chỉ số
 
 Hệ thống được đánh giá theo 2 cấp độ:
 
-### 6.1. Đánh giá mức Khung hình (Frame-level)
+### 7.1. Đánh giá mức Khung hình (Frame-level)
 - **Precision:** $\frac{TP}{TP + FP}$ — Tỉ lệ khung hình báo cháy là chính xác.
 - **Recall:** $\frac{TP}{TP + FN}$ — Tỉ lệ khung hình có cháy thực tế được hệ thống phát hiện.
 - **F1-Score:** Trung bình điều hòa giữa Precision và Recall.
 - **False Alarm Rate (FAR):** $\frac{FP}{FP + TN}$ — Tỉ lệ khung hình an toàn (không có cháy) bị báo nhầm (chỉ số quan trọng đối với hệ thống camera giám sát).
 
-### 6.2. Đánh giá mức Sự kiện (Event-level)
+### 7.2. Đánh giá mức Sự kiện (Event-level)
 - **Detection Latency (Độ trễ phát hiện):** Thời gian (giây) kể từ lúc ngọn lửa/khói bắt đầu xuất hiện trên video cho đến khi hệ thống phát ra cảnh báo đầu tiên.
 - **Tốc độ xử lý (FPS):** Tốc độ khung hình xử lý trên giây để đảm bảo khả năng chạy realtime trên camera.
 
 ---
 
-## 7. Phân công công việc nhóm (4 thành viên)
+## 8. Phân công công việc nhóm (4 thành viên)
 
 | Thành viên | Trách nhiệm chính | Module & Nhiệm vụ cụ thể |
 |---|---|---|
@@ -224,7 +326,7 @@ Hệ thống được đánh giá theo 2 cấp độ:
 
 ---
 
-## 8. Tài liệu tham khảo
+## 9. Tài liệu tham khảo
 
 1. **Chen, T.-H., Wu, P.-H., & Chiou, Y.-C. (2004).** *An early fire-detection method based on image processing.* In IEEE International Conference on Image Processing (ICIP), pp. 1707–1710.
 2. **Çelik, T., & Demirel, H. (2009).** *Fire detection in video sequences using a generic color model.* Fire Safety Journal, 44(2), pp. 147–158.

@@ -1,18 +1,56 @@
-# Python
+# =====================================================================
+# Git ignore cho dự án Fire & Smoke Detection (XLA - PTIT)
+# =====================================================================
+
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
+
+# Môi trường ảo (Virtual Environments)
 .venv/
 venv/
-.pytest_cache/
-.ipynb_checkpoints/
+ENV/
+env/
+env.bak/
+venv.bak/
 
-# Dữ liệu & kết quả (lớn, không commit)
+# Kiểm thử & Đánh giá (Pytest / Coverage)
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# Dữ liệu & Kết quả thực thi (không commit video nặng và file sinh ra)
 data/raw/*
 !data/raw/.gitkeep
-data/samples/*.mp4
-outputs/
+data/samples/*
+!data/samples/.gitkeep
+outputs/*
+!outputs/.gitkeep
 
-# IDE / OS
+# IDEs & Trình soạn thảo mã nguồn
 .idea/
+*.swp
+*.swo
+*~
+.vscode/*
+!.vscode/settings.json
+
+# Tệp hệ điều hành (OS generated files)
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Tệp tạm thời & nhật ký (Logs / Temporary files)
+*.log
+*.tmp
