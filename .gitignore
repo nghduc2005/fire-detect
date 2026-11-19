@@ -57,3 +57,6 @@ desktop.ini
 
 # File patch trao d?i t?m th?i
 tv4-fire-detect.patch
+
+# File patch trao doi
+tv4-*.patch
