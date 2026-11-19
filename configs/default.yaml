@@ -63,7 +63,7 @@ candidates:
   max_aspect: 6.0
 
 tracking:
-  iou_threshold: 0.1      # Lửa dao động mạnh -> IoU thấp
+  iou_threshold: 0.02      # Lửa dao động mạnh -> IoU thấp
   max_missed: 5           # Số frame mất dấu tối đa trước khi xóa track
   buffer_size: 30         # Số frame lịch sử giữ cho mỗi track
 
@@ -71,16 +71,21 @@ temporal:
   flicker_window: 25      # Cửa sổ đếm đổi trạng thái pixel
   flicker_min_freq: 3.0   # Hz, ngưỡng "tần số cao" cho FFT
   min_history: 8          # Cần ít nhất N frame lịch sử mới chấm điểm
+  smoke:                  # Tham số riêng cho SmokeTemporalAnalyzer (TV4)
+    min_history: 8
+    bg_alpha: 0.02        # Tốc độ cập nhật nền xám trượt
+    smooth_window: 5      # Làm trơn trượt đặc trưng qua 5 frame
+    use_optical_flow: true # Dùng Farnebäck (TV3) để đo upward_motion
 
 persistence:
-  window: 15
-  min_hits: 8             # Xuất hiện >= min_hits trong window frame gần nhất
+  window: 8
+  min_hits: 2             # Xuất hiện >= min_hits trong window frame gần nhất
 
 # Chấm điểm: ten_dac_trung: [trong_so, lo, hi]
 # Điểm thành phần = clip((x - lo) / (hi - lo), 0, 1)  (lo > hi => đảo chiều)
 scoring:
   fire:
-    threshold: 0.45
+    threshold: 0.30
     features:
       pixel_flicker:      [0.30, 0.03, 0.25]
       intensity_flicker:  [0.15, 0.30, 0.70]

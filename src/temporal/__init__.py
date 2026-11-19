@@ -17,8 +17,10 @@ from .flicker import (
     compute_intensity_flicker,
     compute_pixel_flicker,
 )
+from .shape_features import ShapeTemporalAnalyzer
+from .smoke_temporal import SmokeTemporalAnalyzer
 
-__all__ = ["FireTemporalAnalyzer", "SmokeTemporalAnalyzer"]
+__all__ = ["FireTemporalAnalyzer", "SmokeTemporalAnalyzer", "ShapeTemporalAnalyzer"]
 
 
 class FireTemporalAnalyzer:
@@ -32,6 +34,9 @@ class FireTemporalAnalyzer:
         self.flicker_window = int(self.cfg.get("flicker_window", 25))
         self.min_history = int(self.cfg.get("min_history", 8))
         self.flicker_min_freq = float(self.cfg.get("flicker_min_freq", 3.0))
+        # TV4: đặc trưng hình dạng/biến thiên diện tích (area_variation,
+        # shape_change, boundary_roughness) dùng chung cửa sổ lịch sử.
+        self.shape = ShapeTemporalAnalyzer(self.cfg)
 
     def update(self, region: Region, bundle: Any) -> Dict[str, float]:
         """Cập nhật độ sáng vùng và tính toán các đặc trưng nhấp nháy cho một region.
@@ -70,32 +75,12 @@ class FireTemporalAnalyzer:
             min_history=max(12, self.min_history),
         )
 
+        # TV4: hình dạng / biến thiên diện tích / độ gồ ghề biên
+        features.update(self.shape.update(region, bundle))
         region.extras.update(features)
         return features
 
     def reset(self) -> None:
         """Reset trạng thái nội bộ nếu có."""
-        return None
-
-
-class SmokeTemporalAnalyzer:
-    """STUB cho khói. TV4 cài đặt ``smoke_features.py`` + lấy ``upward_motion``
-    từ optical flow của TV3.
-    """
-
-    def __init__(self, cfg: Optional[Mapping[str, Any]] = None) -> None:
-        self.cfg = cfg or {}
-
-    def update(self, region: Region, bundle) -> Dict[str, float]:
-        """TODO (TV4 + TV3):
-        - edge_blur           (TV4, wavelet 2D)
-        - texture_smoothness  (TV4, LBP)
-        - upward_motion       (TV3, optical flow)
-        - area_growth         (TV4)
-        """
-        features: Dict[str, float] = {}
-        region.extras.update(features)
-        return features
-
-    def reset(self) -> None:
+        self.shape.reset()
         return None

@@ -54,3 +54,6 @@ desktop.ini
 # Tệp tạm thời & nhật ký (Logs / Temporary files)
 *.log
 *.tmp
+
+# File patch trao d?i t?m th?i
+tv4-fire-detect.patch

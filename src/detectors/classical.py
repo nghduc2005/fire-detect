@@ -71,7 +71,9 @@ class ClassicalDetector(BaseDetector):
         self.smoke_tracker = RegionTracker(self.cfg.get("tracking", {}))
 
         self.fire_temporal = FireTemporalAnalyzer(self.cfg.get("temporal", {}))
-        self.smoke_temporal = SmokeTemporalAnalyzer(self.cfg.get("temporal", {}))
+        temporal_cfg = dict(self.cfg.get("temporal", {}) or {})
+        temporal_cfg["optical_flow"] = self.cfg.get("optical_flow", {}) or {}
+        self.smoke_temporal = SmokeTemporalAnalyzer(temporal_cfg)
 
         scoring = self.cfg.get("scoring", {})
         self.fire_scorer = FeatureScorer(scoring.get("fire", {}), kind="fire")
@@ -103,6 +105,8 @@ class ClassicalDetector(BaseDetector):
         self.smoke_tracker.reset()
         self.fire_temporal.reset()
         self.smoke_temporal.reset()
+        self.fire_voter.reset()
+        self.smoke_voter.reset()
         self._debug_masks = {}
 
     # ------------------------------------------------------------------ #
@@ -171,6 +175,7 @@ class ClassicalDetector(BaseDetector):
                     self.fire_temporal,
                     self.fire_scorer,
                     self.fire_voter,
+                    active_track_ids=self.fire_tracker.active_ids,
                 )
             )
         if self.detect_smoke:
@@ -181,8 +186,11 @@ class ClassicalDetector(BaseDetector):
                     self.smoke_temporal,
                     self.smoke_scorer,
                     self.smoke_voter,
+                    active_track_ids=self.smoke_tracker.active_ids,
                 )
             )
+            if self.use_temporal:
+                self.smoke_temporal.prune(self.smoke_tracker.active_ids)
 
         # 8. Lưu mask debug (app Streamlit).
         self._debug_masks = {
@@ -203,9 +211,12 @@ class ClassicalDetector(BaseDetector):
         temporal_analyzer,
         scorer: FeatureScorer,
         voter: PersistenceVoter,
+        active_track_ids: Optional[set[int]] = None,
     ) -> List[Detection]:
         """Chạy temporal → scoring → persistence trên 1 nhóm region."""
         results: List[Detection] = []
+        if self.use_persistence:
+            voter.begin_frame()
         for region in regions:
             if self.use_temporal:
                 temporal_analyzer.update(region, bundle)
@@ -223,6 +234,9 @@ class ClassicalDetector(BaseDetector):
                     extras={"breakdown": breakdown, **region.extras},
                 )
             )
+        if self.use_persistence and active_track_ids is not None:
+            # Các track hoạt động nhưng không được vote (không đủ điểm) bị tính 0
+            voter.end_frame(active_track_ids)
         return results
 
     # ------------------------------------------------------------------ #

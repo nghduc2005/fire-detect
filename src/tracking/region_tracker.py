@@ -153,3 +153,7 @@ class RegionTracker:
         self._history.clear()
         self._next_id = count(start=1)
 
+    @property
+    def active_ids(self) -> set[int]:
+        """Tập track_id hiện còn sống (kể cả vừa mất dấu trong vài frame)."""
+        return set(self._tracks.keys())
