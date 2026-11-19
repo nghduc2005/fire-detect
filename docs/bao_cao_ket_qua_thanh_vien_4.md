@@ -4,7 +4,7 @@
 > Đề tài: **Phát hiện Lửa & Khói bằng Xử lý ảnh Truyền thống**
 >
 > Phạm vi báo cáo: kết quả của 4 cấu hình pipeline trên bộ kiểm thử hiện có,
-> số liệu lấy trực tiếp từ `outputs/ablation_results.csv`.
+> số liệu lấy trực tiếp từ `outputs/ablation_results.csv` (lần chạy mới nhất).
 
 ---
 
@@ -102,21 +102,27 @@ $$
 
 ## 2. Thiết kế thực nghiệm
 
-### 2.1. Dữ liệu kiểm thử hiện có
+### 2.1. Dữ liệu kiểm thử
 
 | Nhóm | Số video | Số frame dùng | Ghi chú |
 |---|---|---|---|
-| Positive (lửa/khói thật) | 5 | 300 | `fire7`, `fire8`, `fire10`, `fire11`, `fire12` |
-| Positive (demo tổng hợp) | 2 | 120 | `pos_fire`, `pos_smoke` |
-| Negative (demo tổng hợp) | 2 | 120 | `neg_traffic`, `neg_sunset` |
-| **Tổng** | **9** | **540** | 420 frame positive, 120 frame negative |
+| Positive (lửa thật) | 6 | 600 | `fire7`, `fire8`, `fire10`, `fire11`, `fire12` (Bilkent) + `pos_wildfire_2012` |
+| Negative | 0 | 0 | **Chưa có** video non-fire trong `data/raw` |
+| **Tổng** | **6** | **600** | 100 frame đầu mỗi video |
 
-Quy ước: lấy **60 frame đầu** mỗi video (từ CSV: `TP+FN = 420`, `FP+TN = 120`).
-Video cháy rừng dài `3_2012-07-17_15-30-45.avi` chưa được đưa vào vì tên không
-khớp quy ước `pos/fire/smoke`. Bộ negative hiện chỉ gồm video demo nên FPR chỉ
-mang tính minh hoạ xu hướng.
+Năm clip `fire7`–`fire12` lấy từ bộ **Bilkent**; clip `pos_wildfire_2012`
+(lửa rừng, 292×240, 25 FPS) là video bổ sung ngoài Bilkent. Cả 6 clip đều là
+positive và được lấy **100 frame đầu**.
 
-Tiền xử lý chung: resize giữ tỉ lệ về rộng 640 px, Gaussian blur 5×5, chuyển HSV/YCbCr.
+> ⚠️ **Lưu ý quan trọng:** bộ kiểm thử lần này **không có video negative**.
+> Vì vậy `TN = FP = 0`, kéo theo:
+> - Precision luôn bằng 100% (không có FP),
+> - FPR luôn bằng 0% (không có mẫu negative),
+> - Accuracy/F1 bị chi phối hoàn toàn bởi Recall.
+>
+> Các chỉ số Precision, FPR, Accuracy trong mục 3 **không phản ánh khả năng
+> chống báo động giả** và không dùng để kết luận tầng lọc nào tốt hơn. Muốn
+> đánh giá đầy đủ phải bổ sung video non-fire của Bilkent (`nonfire*.avi`).
 
 ### 2.2. Bốn cấu hình bóc tách
 
@@ -127,14 +133,15 @@ Tiền xử lý chung: resize giữ tỉ lệ về rộng 640 px, Gaussian blur 
 | 3. + Temporal | ✓ | ✓ | ✗ | Đo tác dụng đặc trưng thời gian/hình dạng |
 | 4. Full Pipeline | ✓ | ✓ | ✓ | Đo tác dụng persistence voting |
 
-Tham số liên quan: `scoring.fire.threshold = 0.30`, `scoring.smoke.threshold = 0.45`,
+Tham số: `scoring.fire.threshold = 0.30`, `scoring.smoke.threshold = 0.45`,
 `persistence = 8 frame / min_hits 2`, MOG2 + Farnebäck bật.
 
 ### 2.3. Cách đo
 
-- Mỗi video được reset detector, chạy 60 frame, đo thời gian `detector.process`.
-- Video positive: mọi frame đều kỳ vọng có phát hiện; video negative: không có.
-- Chỉ số tổng hợp trên toàn bộ 540 frame cho từng cấu hình.
+- Mỗi video được reset detector, chạy 100 frame, đo thời gian `detector.process`.
+- Video positive: mọi frame đều kỳ vọng có phát hiện.
+- Không có video negative nên TP + FN = 600, FP = TN = 0.
+- FPS đo trên CPU, một lần chạy, chưa tính thời gian đọc/ghi video.
 
 ---
 
@@ -144,10 +151,10 @@ Tham số liên quan: `scoring.fire.threshold = 0.30`, `scoring.smoke.threshold 
 
 | Cấu hình | TP | FP | TN | FN | Acc (%) | Precision (%) | Recall (%) | F1 (%) | FPR (%) | mIoU (%) | FPS |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1. Only Color | 408 | 120 | 0 | 12 | 75.56 | 77.27 | **97.14** | **86.08** | 100.00 | 0.00 | **34.3** |
-| 2. Color + Motion | 338 | 32 | 88 | 82 | 78.89 | 91.35 | 80.48 | 85.57 | 26.67 | 0.00 | 32.6 |
-| 3. + Temporal | 322 | 15 | 105 | 98 | **79.07** | 95.55 | 76.67 | 85.07 | 12.50 | 0.00 | 18.6 |
-| 4. + Persistence | 300 | **10** | **110** | 120 | 75.93 | **96.77** | 71.43 | 82.19 | **8.33** | 0.00 | 18.3 |
+| 1. Only Color | 600 | 0 | 0 | 0 | **100.00** | 100.00 | **100.00** | **100.00** | 0.00 | 0.00 | **52.8** |
+| 2. Color + Motion | 448 | 0 | 0 | 152 | 74.67 | 100.00 | 74.67 | 85.50 | 0.00 | 0.00 | 52.4 |
+| 3. + Temporal | 441 | 0 | 0 | 159 | 73.50 | 100.00 | 73.50 | 84.73 | 0.00 | 0.00 | 25.2 |
+| 4. + Persistence | 428 | 0 | 0 | 172 | 71.33 | 100.00 | 71.33 | 83.27 | 0.00 | 0.00 | 25.4 |
 
 ### 3.2. Biểu đồ so sánh
 
@@ -155,76 +162,89 @@ Tham số liên quan: `scoring.fire.threshold = 0.30`, `scoring.smoke.threshold 
 
 ![Precision và Recall của 4 cấu hình](report/ablation_precision_recall.png)
 
+> Biểu đồ Precision và FPR chỉ mang tính minh hoạ vì Precision = 100% và
+> FPR = 0% ở mọi cấu hình do không có mẫu negative.
+
 ### 3.3. Phân tích từng tầng
 
-**1) Only Color (Baseline).** Recall 97.14% (chỉ 12/420 frame bỏ sót) nhưng FPR
-100%: cả 120 frame negative đều bị báo cháy. Nguyên nhân: mask màu không phân biệt
-được đèn vàng/đỏ, ô tô trắng, mảng mây xám và hoàng hôn với lửa/khói.
+**1) Only Color (Baseline).** Trên 600 frame positive, baseline phát hiện đủ
+600 frame (Recall 100%), không có FP vì không có negative. F1 = 100% chỉ phản
+ánh việc **mọi frame đều là lửa** và màu lửa được bắt rất nhạy — không có nghĩa
+pipeline hoàn hảo.
 
-**2) Color + Motion.** Giao mask màu với MOG2 loại phần lớn nguồn sáng tĩnh:
-FP giảm 120 → 32, FPR 100% → 26.67%, Precision tăng 77.27% → 91.35%. Đổi lại,
-Recall giảm còn 80.48% vì một số vùng lửa/khói bị mask chuyển động cắt bớt hoặc
-bị hấp thụ vào nền.
+**2) Color + Motion.** Recall giảm mạnh 100% → 74.67% (152 frame bị bỏ sót,
+tăng 25.3 điểm phần trăm FN). Nguyên nhân: giao mask màu với MOG2 loại bỏ cả
+những vùng lửa ít chuyển động, lửa ở xa, hoặc vùng bị mask chuyển động cắt bớt;
+một số đoạn camera rung/zoom làm mask chuyển động không ổn định. Trên bộ dữ
+liệu **chỉ có positive**, tầng này không có FP để loại nên chỉ thể hiện mặt
+trái (giảm Recall). FPS gần như không đổi (52.8 → 52.4).
 
-**3) Color + Motion + Temporal.** Đặc trưng FFT/lửa, Sobel–LBP/khói và hình dạng
-loại thêm 17 FP (32 → 15), FPR còn 12.50%, Precision đạt 95.55%. Recall giảm
-80.48% → 76.67% do các track mới chưa đủ 8–12 frame lịch sử để tính flicker/LBP
-và do ngưỡng chấm điểm khá chặt. FPS giảm mạnh 32.6 → 18.6 do Farnebäck optical
-flow chạy mỗi frame.
+**3) Color + Motion + Temporal.** Recall giảm nhẹ 74.67% → 73.50% (thêm 7 FN).
+Đặc trưng flicker/LBP/hình dạng cần 8–12 frame lịch sử; các track mới hoặc
+track bị đứt do IoU thấp nhận điểm trung tính nên chưa vượt ngưỡng. FPS giảm
+mạnh 52.4 → 25.2 do Farnebäck optical flow chạy mỗi frame. Trên dữ liệu có
+negative, tầng này sẽ là phần loại FP chính; nhưng bộ hiện tại không đo được.
 
-**4) Full Pipeline (+ Persistence).** Voting 8 frame/min_hits 2 loại thêm 5 FP
-(15 → 10), FPR thấp nhất 8.33%, Precision cao nhất 96.77%. Tuy nhiên cơ chế
-"khởi động" của persistence làm mất thêm 22 TP (FN 98 → 120), Recall còn 71.43%.
-Với clip chỉ 60 frame, vài frame đầu mỗi track bị chặn là tổn thất đáng kể; trên
-video dài hơn, chi phí này gần như không đáng kể.
+**4) Full Pipeline (+ Persistence).** Recall còn 71.33% (thêm 13 FN so với
+cấu hình 3). Persistence yêu cầu `min_hits = 2` frame vượt ngưỡng trong 8 frame
+gần nhất, nên mỗi track bị chặn ít nhất 1 frame đầu; với clip 100 frame và
+track ngắn, tổn thất này đáng kể. Precision/FPR không đổi (vẫn 100%/0%) do
+không có negative.
 
-**Tổng hợp:** trong bộ kiểm thử nhỏ này, F1 cao nhất ở cấu hình 2 (85.57%),
-Precision/FPR tốt nhất ở cấu hình 4 (96.77% / 8.33%), Recall tốt nhất ở baseline
-(97.14%). Kết quả thể hiện đúng trade-off Precision–Recall của từng tầng lọc;
-không có cấu hình nào trội toàn diện do dữ liệu ít và clip ngắn.
+**Tổng hợp:** trong điều kiện **positive-only**, cấu hình càng thêm tầng lọc thì
+Recall càng giảm, nên F1 giảm dần từ 100% → 83.27%. Đây là kết quả **không đủ
+để kết luận** hiệu quả của các tầng lọc phát hiện sai: bản chất các tầng
+Motion/Temporal/Persistence là giảm FP, mà FP không tồn tại trong tập test này.
 
 ### 3.4. Phân tích lỗi (Failure cases)
 
-1. **Khói loãng / ban đêm:** `edge_blur ≈ 1` và entropy LBP cao → điểm khói thấp,
-   dễ bỏ sót (đóng góp vào FN tăng ở cấu hình 3–4).
-2. **Lửa nhỏ / bị che khuất:** đặc trưng flicker cần 8–12 frame lịch sử; track mới
-   hoặc track bị đứt do IoU thấp nhận điểm trung tính nên chưa vượt ngưỡng.
-3. **Nhiễu chuyển động toàn khung (rung camera, zoom):** mask MOG2 phủ gần hết
-   frame, mask màu không còn được lọc theo chuyển động cục bộ.
-4. **Vật thể trắng/xám chuyển động (ô tô, mây):** có thể lọt qua màu + chuyển động;
-   tầng temporal loại được phần lớn nhưng vẫn còn 10 FP ở cấu hình 4.
-5. **Persistence warm-up:** mỗi track bị chặn `min_hits-1` frame đầu; với clip
-   60 frame, đây là nguyên nhân chính khiến Recall cấu hình 4 giảm.
+1. **Lửa ít chuyển động / ở xa:** mask MOG2 không phủ hoặc phủ không đủ vùng
+   lửa → FN tăng mạnh ở cấu hình 2 (152 frame).
+2. **Track mới / track đứt:** đặc trưng flicker, LBP, area_variation cần lịch
+   sử 8–12 frame; track mới nhận điểm trung tính, dễ trượt ngưỡng.
+3. **Persistence warm-up:** mỗi track mất ít nhất `min_hits-1` frame đầu; với
+   clip ngắn, đây là nguyên nhân chính làm Recall giảm ở cấu hình 4.
+4. **Camera rung/zoom:** mask chuyển động không ổn định, có thể vừa làm mất
+   vùng lửa thật vừa tạo vùng nhiễu.
+5. **Chưa đo được báo động giả:** không có video negative nên không thể phân
+   tích các trường hợp đèn, mặt trời, mây, ô tô trắng.
 
 ### 3.5. Hạn chế
 
-- Bộ negative chỉ có 2 video demo → FPR chưa đại diện cho dữ liệu thực tế.
-- 4/9 video là dữ liệu tổng hợp; chỉ số chưa phản ánh hoàn toàn khói/lửa thật.
-- Chỉ dùng 60 frame đầu mỗi video.
+- **Không có video negative** → Precision/FPR/Accuracy không có ý nghĩa thống kê;
+  không thể chứng minh hiệu quả giảm báo động giả của Motion/Temporal/Persistence.
+- Chỉ có 6 video positive, lấy 100 frame đầu mỗi video.
+- 1/6 video (`pos_wildfire_2012`) không thuộc Bilkent và có độ phân giải/FPS khác.
 - `Mean IoU = 0` vì chưa có annotation bounding box.
-- Ngưỡng trong `configs/default.yaml` được tinh chỉnh trên bộ demo hiện tại.
+- Ngưỡng trong `configs/default.yaml` được tinh chỉnh trên bộ demo trước đó,
+  chưa tune lại trên Bilkent.
 - FPS đo trên CPU, một lần chạy, phụ thuộc cấu hình máy.
 
 ### 3.6. Kết luận
 
-Trên bộ kiểm thử hiện có, pipeline chứng minh được vai trò từng tầng: mask chuyển
-động giảm mạnh báo động giả, đặc trưng thời gian tăng Precision và giảm FPR,
-persistence đạt Precision/FPR tốt nhất. Để số liệu đủ mạnh cho báo cáo cuối kỳ
-cần bổ sung video negative thật, đưa video cháy rừng dài vào (đổi tên theo quy ước),
-tăng số frame đánh giá và bổ sung annotation box nếu muốn báo cáo mIoU.
+Trên bộ 600 frame positive hiện tại, pipeline phát hiện lửa tốt ở baseline
+(Recall 100%) nhưng các tầng Motion → Temporal → Persistence lần lượt làm giảm
+Recall xuống 74.67% → 73.50% → 71.33%. Nguyên nhân không phải các tầng này vô
+dụng, mà do **tập kiểm thử thiếu hoàn toàn mẫu negative** — trong khi mục tiêu
+chính của chúng là loại báo động giả.
+
+Để báo cáo có kết luận ablation đúng nghĩa, cần bổ sung **video non-fire của
+Bilkent** (`nonfire*.avi`) vào `data/raw`, chạy lại với cùng giao thức (100 hoặc
+300 frame/video). Khi đó mới so sánh được Precision, FPR và F1 giữa 4 cấu hình;
+bảng số hiện tại chỉ nên dùng để phân tích Recall trên dữ liệu positive.
 
 ---
 
 ## 4. Cách tái lập kết quả
 
 ```bash
-# 1) chạy ablation (60 frame/video như số liệu trong báo cáo)
-python -m scripts.run_ablation --max-frames 60
+# chạy ablation (100 frame/video như số liệu trong báo cáo)
+python -m scripts.run_ablation --max-frames 100
 
-# 2) vẽ lại biểu đồ từ CSV
+# vẽ lại biểu đồ từ CSV
 python -m scripts.plot_ablation
 
-# 3) xem bảng kết quả
+# xem bảng kết quả
 python -c "import pandas as pd; print(pd.read_csv('outputs/ablation_results.csv'))"
 ```
 

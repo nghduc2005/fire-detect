@@ -62,7 +62,11 @@ def collect_dataset(data_dir: str = "data/raw") -> List[Tuple[str, bool]]:
     for ext in ("*.mp4", "*.avi", "*.mov", "*.mkv"):
         for path in glob.glob(os.path.join(data_dir, "**", ext), recursive=True):
             lower_p = path.lower()
-            if any(k in lower_p for k in ("neg", "normal", "non_fire", "non-fire")):
+            # Bilkent đặt tên video negative là "nonfire*.avi" (không có dấu _)
+            if any(
+                k in lower_p
+                for k in ("neg", "normal", "non_fire", "non-fire", "nonfire", "no_fire", "nofire")
+            ):
                 samples.append((path, False))
             elif any(k in lower_p for k in ("pos", "fire", "smoke")):
                 samples.append((path, True))
